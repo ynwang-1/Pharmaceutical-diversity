@@ -1,0 +1,112 @@
+otu1 <- read.csv("Abundance.csv", header = TRUE, row.names = 1)
+otu3 <- otu1[which(rowMeans(otu1) > 0.00001), ]
+
+cor <- rcorr(t(otu3), type = 'spearman')
+r = cor$r
+p = cor$P 
+p <- p.adjust(p, method = 'BH')
+r[p>=0.05|abs(r)<0.6] = 0
+
+Sys.setlocale('LC_ALL','C')
+diag(r) <- 0
+
+r=r[which(rowSums(abs(r)) > 0),]
+r=r[,which(colSums(abs(r)) > 0)]
+write.csv(r, "r.csv", row.names = TRUE)
+
+r[1:848, 1:848] <-0
+r[849:1174, 849:1174] <-0
+write.table (r,file="r_remove.txt", sep="\t", quote =T,col.names = NA)
+
+net_igraph <- graph_from_adjacency_matrix(r,mode="undirected",weighted=TRUE,diag=FALSE)
+net_igraph
+net_igraph <- simplify(net_igraph)
+net_igraph <- delete_vertices(net_igraph, names(degree(net_igraph)[degree(net_igraph) == 0]))
+E(net_igraph)$correlation <- E(net_igraph)$weight
+E(net_igraph)$weight <- abs(E(net_igraph)$weight)
+E(net_igraph)$width = abs(E(net_igraph)$weight)*2.5
+
+col_g <- "#C1C1C1"
+cols <- c("#EA9527", "#F16E1D", "#DEB99B", "#5ECC6D", "#5DAFD9", "#7ED1E4",
+          "#6E4821", "#A4B423", "#C094DF", "#DC95D8", "#326530", "#50C0C9")
+E(net_igraph)$correlation <- E(net_igraph)$weight
+E(net_igraph)$weight <- abs(E(net_igraph)$weight)
+set.seed(007)
+V(net_igraph)$modularity <- membership(cluster_fast_greedy(net_igraph))
+V(net_igraph)$label <- V(net_igraph)$name
+V(net_igraph)$label <- NA
+
+modu_sort <- V(net_igraph)$modularity %>% table() %>% sort(decreasing = T)
+top_num <- 12
+modu_name <- names(modu_sort[1:12])
+modu_cols <- cols[1:length(modu_name)]
+names(modu_cols) <- modu_name
+
+V(net_igraph)$color <- V(net_igraph)$modularity
+V(net_igraph)$color[!(V(net_igraph)$color %in% modu_name)] <- col_g
+V(net_igraph)$color[(V(net_igraph)$color %in% modu_name)] <- modu_cols[match(V(net_igraph)$color[(V(net_igraph)$color %in% modu_name)], modu_name)]
+V(net_igraph)$frame.color <- V(net_igraph)$color
+E(net_igraph)$color <- col_g
+
+for (i in modu_name) {
+  col_edge <- cols[which(modu_name == i)]
+  otu_same_modu <- V(net_igraph)$name[which(V(net_igraph)$modularity == i)]
+  E(net_igraph)$color[(data.frame(as_edgelist(net_igraph))$X1 %in% otu_same_modu) & (data.frame(as_edgelist(net_igraph))$X2 %in% otu_same_modu)] <- col_edge
+}
+
+sub_net_layout <- layout_with_fr(net_igraph, niter = 999, grid = 'nogrid')
+
+pdf(paste0("GCK.pdf"), width=6, height=6)
+plot(net_igraph,layout=sub_net_layout, edge.color = E(net_igraph)$color,vertex.size=4)
+title(main = paste0('n=',length(V(net_igraph)$name),', ','L=',nrow(data.frame(as_edgelist(net_igraph)))))
+dev.off()
+
+adjacency_otu <- data.frame(get.adjacency(net_igraph,sparse=FALSE))
+head(adjacency_otu)[1:6] 
+adjacency.cor<-data.frame(get.adjacency(net_igraph,sparse=FALSE,attr="correlation"))
+write.csv(adjacency_otu, 'adjacency_otu.csv')
+
+otu_represent <- otu1[which(rowMeans(otu1) > 0.00002), ]
+otu_represent <- otu_represent[rowSums(otu_represent != 0) > 0, ]
+write.csv(otu_represent, 'otu_represent.csv')
+
+adjacency_otu1<-read.csv("adjacency_otu.csv")
+otu_represent1<-read.csv("otu_represent.csv")
+otu_represent_result <- otu_represent1[otu_represent1$X %in% adjacency_otu1$X, ]
+write.csv(otu_represent_result, 'otu_represent_result.csv',row.names = FALSE)
+
+otu <- read.csv('otu_represent_result.csv', row.names = 1, check.names = FALSE)
+
+sub_graph <- list()
+for (i in names(otu)) {
+  sample_i <- otu[i]
+  select_node <- rownames(sample_i)[which(sample_i != 0)]
+  sub_graph[[i]] <- subgraph(net_igraph, select_node)
+}
+sub_graph
+
+sample_name <- c()
+nodes_num <- c()
+degree <- c()
+num_edges <- c()
+connectance <- c()
+centralization_degree <- c()
+
+for(i in 1:length(sub_graph)) {
+  sample_name <- c(sample_name, names(sub_graph[i]))
+  nodes_num <- c(nodes_num, length(V(sub_graph[[i]])))
+  degree <- c(degree, mean(degree(sub_graph[[i]])))
+  num_edges <- c(num_edges, gsize(sub_graph[[i]]))
+  connectance <- c(connectance, edge_density(sub_graph[[i]], loops = FALSE))
+  centralization_degree <- c(centralization_degree, centr_degree(sub_graph[[i]])$centralization)}
+
+sub_graph_stat <- data.frame(
+  nodes_num = nodes_num,
+  degree = degree,
+  num_edges = num_edges,
+  connectance = connectance,
+  centralization_degree = centralization_degree)
+
+rownames(sub_graph_stat) <- sample_name
+head(sub_graph_stat)  
+write.csv(sub_graph_stat, 'sub_graph_stat.csv', quote = FALSE)
