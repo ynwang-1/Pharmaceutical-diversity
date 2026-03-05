@@ -1,0 +1,103 @@
+data1 <- read.csv("1.Life history trait.csv",row.names = 1,header = TRUE,check.names = FALSE)
+data2 <- read.csv("2.eggNOG.csv",row.names = 1,header = TRUE,check.names = FALSE)
+data3 <- read.csv("3.CAZy.csv",row.names = 1,header = TRUE,check.names = FALSE)
+data4 <- read.csv("4.KEGG.csv",row.names = 1,header = TRUE,check.names = FALSE)
+Label <- read.csv("Label.csv",row.names = 1,header = TRUE,check.names = FALSE)
+
+data1 <- data1[, colSums(data1!= 0) > 0]
+data2 <- data2[, colSums(data2!= 0) > 0]
+data3 <- data3[, colSums(data3!= 0) > 0]
+data4 <- data4[, colSums(data4!= 0) > 0]
+
+data1 <-as.data.frame(t(data1))
+data2 <-as.data.frame(t(data2))
+data3 <-as.data.frame(t(data3))
+data4 <-as.data.frame(t(data4))
+
+NCI60_4arrays <- list(data1,data2,data3,data4)
+names(NCI60_4arrays)<-c('Life_history_trait','eggNOG','CAZy','KEGG')
+
+mcoin <- mcia(NCI60_4arrays, cia.nf = 4, cia.scan = FALSE, nsc = TRUE)
+mcoin
+summary(mcoin)
+mcoin$mcoa
+names(mcoin$mcoa)
+
+mcoin$mcoa$pseudoeig
+pseudoeig<- as.data.frame(mcoin$mcoa$pseudoeig)
+write.table (pseudoeig,file="pseudoeig.txt", sep="\t", quote =T,col.names = NA)
+RV<-mcoin$mcoa$RV
+write.table (RV,file="RV.txt", sep="\t", quote =T,col.names = NA) 
+
+coordinate1<- mcoin$mcoa$Tl1 
+write.table (coordinate1,file="55×4.txt", sep="\t", quote =T,col.names = NA) 
+coordinate2<- mcoin$mcoa$SynVar 
+write.table (coordinate2,file="55.txt", sep="\t", quote =T,col.names = NA) 
+
+contribution <- mcoin$mcoa$cov2
+write.table (contribution,file="contribution.txt", sep="\t", quote =T,col.names = NA) 
+
+contribution <- mcoin$mcoa$Tco
+write.table (contribution,file="gene-score.txt", sep="\t", quote =T,col.names = NA) 
+
+cancer_type <- Label$diversity     
+cancer_type
+
+plot(mcoin, axes = 1:2, phenovec = cancer_type, sample.lab = FALSE, df.color = 1:4)
+
+melan_gene <- selectVar(mcoin, a1.lim = c(2, Inf), a2.lim = c(-Inf, Inf))
+melan_gene
+
+geneStat <- plotVar(mcoin, axes = 1:2, var = melan_gene$var, var.lab = TRUE)
+
+coordinate1$gene <-rep(rep(c("Life history trait","eggNOG","Cazy","KEGG"), each = 55), 1) 
+coordinate1$name <-rep(row.names(Label),4) 
+Label$name <- row.names(Label)
+coordinate1<-merge(coordinate1,Label,by="name")
+coordinate1$diversity<-as.factor(coordinate1$diversity)
+coordinate1$temperature<-as.factor(coordinate1$temperature)
+
+p1<-ggplot(data=coordinate1, aes(x=Axis1, y=Axis2, shape= diversity, colour=temperature)) + 
+  geom_point(size=2) +
+  theme_bw()+
+  geom_hline(yintercept=0,linetype=2,color='gray') + 
+  geom_vline(xintercept=0,linetype=2,color='gray')+
+  xlab(paste('MCoA1(76.33 %)', sep = '')) +
+  ylab(paste('MCoA2(10.76 %)', sep = '')) +
+  xlim(-1.5,3.5)+
+  ylim(-5,3.5)+
+  scale_shape_manual(values = c(1,16,15,17),
+                     limits = c("0", "1", "3","6"))+ 
+  theme(panel.background = element_rect(fill = "transparent",colour = NA),
+        aspect.ratio = 1) +
+  labs(colour = "", shape = "Diversity")+
+  theme(panel.grid = element_blank())+
+  theme(panel.border = element_rect(fill=NA,color="black", size=1, linetype="solid"))
+p1
+ggsave("MCOA-55×4.pdf",width = 8,height = 8) 
+
+colnames(coordinate2)<-c("Axis1","Axis2","Axis3","Axis4")
+coordinate2 <-cbind(coordinate2,Label)
+coordinate2$diversity<-as.factor(coordinate2$diversity)
+coordinate2$temperature<-as.factor(coordinate2$temperature)
+
+p3<-ggplot(data=coordinate2, aes(x=Axis1, y=Axis2, shape= diversity, colour=temperature)) + 
+  geom_point(size=4) +
+  theme_bw()+
+  geom_hline(yintercept=0,linetype=2,color='gray') + 
+  geom_vline(xintercept=0,linetype=2,color='gray')+
+  xlab(paste('MCoA1(76.34 %)', sep = '')) +
+  ylab(paste('MCoA2(10.75 %)', sep = '')) +
+  xlim(-1.5,2.5)+
+  ylim(-4.5,2)+
+  scale_colour_manual(values = c("#a6cee3", "#1f78b4"),
+                      limits = c("20","23"))+ 
+  scale_shape_manual(values = c(16, 17, 18, 15),
+                     limits = c("0", "1","3","6"))+ 
+  theme(panel.background = element_rect(fill = "transparent",colour = NA),
+        aspect.ratio = 1) +
+  labs(colour = "Temperature", shape = "Diversity")+ 
+  theme(panel.grid = element_blank())+
+  theme(panel.border = element_rect(fill=NA,color="black", size=1, linetype="solid"))
+p3
+ggsave("MCOA-55.pdf",width = 6,height = 6) 
