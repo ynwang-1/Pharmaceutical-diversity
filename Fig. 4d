@@ -1,0 +1,30 @@
+data <- read.csv("Genus.csv",row.names = 1,header = TRUE,check.names = FALSE)
+
+p1 <- ggplot(data, aes(x = g__Microbacterium, y = Lytic)) +
+  geom_point(aes(color = factor(diversity)), size = 4) +
+  scale_color_manual(values = c(
+    "0" = "#e41a1c",
+    "1" = "#377eb8",
+    "3" = "#4daf4a",
+    "6" = "#ff7f00"
+  )) +
+  geom_smooth(method = "glm",
+              linewidth = 1.2, se = TRUE,
+              formula = 'y ~ x',
+              color = "black",
+              fill = "grey") +
+  theme_classic() +
+  stat_cor(label.y = 0.58, size = 6,
+           aes(label = paste(after_stat(r.label), after_stat(p.label), sep = "~`,`~"), group = 1),
+           color = "black", method = "spearman",
+           label.x.npc = "left") +
+  stat_regline_equation(label.y = 0.6, size = 6,
+                        aes(group = 1), color = "black") +
+  theme(
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 12),
+    legend.position = "none"
+  ) +
+  xlab("Abundance of Microbacterium") +
+  ylab("Lytic phage") 
+p1
