@@ -1,0 +1,44 @@
+df <- read.csv("soil_lifestyle.csv",row.names = 1, header = T)
+df$temperature <- as.factor(df$temperature)
+df$diversity <- as.factor(df$diversity)
+
+model <- lm(lysogenic ~ temperature, data = df)
+anova(model)
+
+shapiro.test(residuals(model))
+leveneTest(lysogenic ~ temperature, data=df)
+
+model_means <- emmeans(object = model,
+                       specs = ~ temperature)
+model_means_cld <- cld(object = model_means,
+                       adjust = "BH",
+                       Letters = letters)
+model_means_cld
+model_means_cld <- model_means_cld %>%
+  as.data.frame() 
+model_means_cld
+
+p5 <- ggplot(data = model_means_cld,
+             aes(x = temperature, y = emmean, fill = temperature)) +
+  geom_bar(stat = "identity", color = "black", show.legend = FALSE, width = 0.8, alpha = 1) +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2) +
+  scale_y_continuous(name = "soil_lysogenic_ratio") +  
+  xlab("Temperature") +
+  geom_text(aes(label = str_trim(.group), y = emmean + SE), vjust = -0.5) +
+  scale_fill_manual(values = c("#b2df8a", "#33a02c")) +
+  theme_classic() +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    strip.text = element_text(size = 12, face = "bold")
+  ) +
+  theme(legend.title = element_blank(),
+        legend.position = "none")
+p5
