@@ -1,0 +1,65 @@
+df <- read.csv("soil+gut_lifestyle.csv",row.names = 1, header = T)
+df$name <- as.factor(df$name)
+
+model <- lm(lysogenic ~ name, data = df)
+anova(model)
+
+shapiro.test(residuals(model))
+leveneTest(lysogenic ~ name, data=df)
+
+welch <- oneway.test(lysogenic ~ name, data = df)
+welch
+
+gh <- df %>%
+  games_howell_test(lysogenic ~ name)
+
+model_means_cld <- df %>%
+  group_by(name) %>%
+  summarise(
+    emmean = mean(lysogenic),
+    SE = sd(lysogenic)/sqrt(n())
+  )
+
+pvals <- gh$p.adj
+names(pvals) <- paste(gh$group1, gh$group2, sep = "-")
+
+letters <- multcompLetters(pvals)$Letters
+letters
+
+letters_df <- data.frame(
+  name = names(letters),
+  .group = letters
+)
+model_means_cld <- left_join(model_means_cld, letters_df, by = "name")
+
+p7 <- ggplot(data = model_means_cld,
+             aes(x = name, y = emmean, fill = name)) +
+  geom_bar(stat = "identity",
+           color = "black",
+           show.legend = FALSE,
+           width = 0.8,
+           alpha = 1) +
+  geom_errorbar(aes(ymin = emmean - SE,
+                    ymax = emmean + SE),
+                width = 0.2) +
+  scale_y_continuous(name = "lysogenic_ratio") +
+  xlab("") +
+  geom_text(aes(label = str_trim(.group),
+                y = emmean + SE),
+            vjust = -0.5) +
+  scale_fill_manual(values = c("#929b4f", "#db8195")) +
+  theme_classic() +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    strip.text = element_text(size = 12, face = "bold"),
+    legend.position = "none"
+  )
+p7
