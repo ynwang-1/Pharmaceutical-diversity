@@ -1,0 +1,52 @@
+df2 <- read.csv("ROS.csv",row.names = 1, header = T)
+df2$group <- factor(df2$group, levels = unique(df2$group))
+
+comparisons <- list(c("CK", "ACADM"),c("CK", "nrdA"))
+myt_test1 <- t_test(df2,formula = ROS ~ group,
+                    comparisons = comparisons)
+myt_test1 <- myt_test1 %>%
+  mutate(p.signif = ifelse(p < 0.001, "***", 
+                           ifelse(p < 0.01, "**", 
+                                  ifelse(p < 0.05, "*", "ns"))))
+View(myt_test1)
+stat_t.test <- add_xy_position(myt_test1, x = 'group', dodge = 1)
+
+p1 <- ggbarplot(df2, x = 'group', y = 'ROS', fill = 'group', add = 'mean_sd',
+                position = position_dodge(0.8), width = 0.6, size = 0.5) +  
+  scale_fill_manual(values = c("#ffb117", "#5f9bed", "#6db50a"), guide = "none") +
+  labs(x = '', y = 'ROS') +
+  stat_pvalue_manual(stat_t.test, label = 'p.signif', tip.length = 0.03,
+                     bracket.size = 0.6, size = 5, bracket.nudge.y = 0.02) +
+  theme(legend.position = "none",  
+        panel.grid = element_blank(),
+        axis.text = element_text(size = 16, color = "black"),
+        axis.title = element_text(size = 16, color = "black")) + 
+  theme_classic(base_size = 15, base_line_size = 0.5)
+
+p1
+
+df2 <- read.csv("SOD.csv",row.names = 1, header = T)
+df2$group <- factor(df2$group, levels = unique(df2$group))
+
+comparisons <- list(c("CK", "ACADM"),c("CK", "nrdA"))
+myt_test1 <- t_test(df2,formula = SOD ~ group,
+                    comparisons = comparisons)
+myt_test1 <- myt_test1 %>%
+  mutate(p.signif = ifelse(p < 0.001, "***", 
+                           ifelse(p < 0.01, "**", 
+                                  ifelse(p < 0.05, "*", "ns"))))
+View(myt_test1)
+stat_t.test <- add_xy_position(myt_test1, x = 'group', dodge = 1)
+
+p1 <- ggbarplot(df2, x = 'group', y = 'SOD', fill = 'group', add = 'mean_sd',
+                position = position_dodge(0.8), width = 0.6, size = 0.5) +  
+  scale_fill_manual(values = c("#ffb117", "#5f9bed", "#6db50a"), guide = "none") +
+  labs(x = '', y = 'SOD') +
+  stat_pvalue_manual(stat_t.test, label = 'p.signif', tip.length = 0.03,
+                     bracket.size = 0.6, size = 5, bracket.nudge.y = 0.02) +
+  theme(legend.position = "none", 
+        panel.grid = element_blank(),
+        axis.text = element_text(size = 16, color = "black"),
+        axis.title = element_text(size = 16, color = "black")) + 
+  theme_classic(base_size = 15, base_line_size = 0.5)
+p2
