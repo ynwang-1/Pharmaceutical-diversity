@@ -1,0 +1,50 @@
+otu <-  read.csv("OTU.csv",row.names = 1,header = TRUE)
+otu <- otu[rowSums(otu != 0) > 0, ]
+sample <-  read.csv("Group.csv",row.names = 1,header = TRUE)
+sample$diversity <- factor(sample$diversity)
+
+tax <-  read.csv("TAX.csv",row.names = 1,header = TRUE)
+tax <- tax[rownames(tax) %in% rownames(otu), ]
+tax %<>% tidy_taxonomy
+
+df <- microtable$new(sample_table = sample,
+                     otu_table = otu,
+                     tax_table = tax,
+                     auto_tidy = F)
+df
+
+lefse <- trans_diff$new(dataset = df,
+                        method = "lefse",
+                        group = "diversity",
+                        p_adjust_method = "none"
+)
+
+lefse$res_diff %>%
+  head()
+write.csv(lefse$res_diff,"res_diff.csv",quote = FALSE,row.names = FALSE)
+
+significant_features <- lefse$res_diff[lefse$res_diff$LDA > 3, ]
+selected_taxa <- rownames(significant_features)
+LDA <- lefse$plot_diff_bar(
+  use_number = selected_taxa,
+  width = 0.8,
+  c("#e41a1c", "#377eb8", "#4daf4a","#ff7f00"),
+  group_order = c("0", "1", "3", "6")
+) + 
+  theme(
+    axis.line.y = element_line(color = "black"),
+    axis.line.x = element_line(color = "black")
+  )
+LDA
+
+clad <- lefse$plot_diff_cladogram(
+  use_taxa_num =200, 
+  use_feature_num = 25,
+  clade_label_level = 5,
+  group_order = c("0", "1", "3", "6"),
+  color = c("#e41a1c", "#377eb8", "#4daf4a", "#ff7f00"),
+  branch_size = 0.5,
+  alpha = 0.2,
+  clade_label_size = 1.5
+)
+clad
