@@ -1,0 +1,63 @@
+data <- read.csv("AMGs_ok.csv", header = TRUE, row.names = 1)
+
+data$diversity <- factor(data$diversity,levels = unique(data$diversity))
+data$temperature <- factor(data$temperature,levels = unique(data$temperature))
+
+p5 <- ggplot(data, aes(temperature, ACADM)) +
+  geom_boxplot(aes(color = temperature), size = 0.8) +
+  geom_jitter(aes(color = temperature), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#a6cee3", "#1f78b4")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black"),
+        strip.text = element_text(size = 14)) + 
+  ylab("ACADM Z-score Abundance") +
+  xlab("Temperature")
+p5
+
+comparisons <- list(c("20", "23"))
+diff_t <- t_test(data, formula = ACADM ~ temperature,
+                 comparisons = comparisons)
+lab <- add_xy_position(diff_t, x = 'temperature', dodge = 0.65)
+lab$p.signif <- ifelse(lab$p < 0.001, "***",
+                       ifelse(lab$p < 0.01, "**",
+                              ifelse(lab$p < 0.05, "*", "ns")))# 添加 p.signif 列
+p6<-p5 + 
+  stat_pvalue_manual(lab, label = "p.signif",
+                     label.size = 5,
+                     bracket.size = 0.4,
+                     tip.length = 0.02)
+p6
+
+p7 <- ggplot(data, aes(temperature, nrdA)) +
+  geom_boxplot(aes(color = temperature), size = 0.8) +
+  geom_jitter(aes(color = temperature), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#a6cee3", "#1f78b4")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black"),
+        strip.text = element_text(size = 14)) + 
+  ylab("nrdA Z-score Abundance") +
+  xlab("Temperature")
+p7
+
+comparisons <- list(c("20", "23"))
+diff_t <- t_test(data, formula = nrdA ~ temperature,
+                 comparisons = comparisons)
+lab <- add_xy_position(diff_t, x = 'temperature', dodge = 0.65)
+lab$p.signif <- ifelse(lab$p < 0.001, "***",
+                       ifelse(lab$p < 0.01, "**",
+                              ifelse(lab$p < 0.05, "*", "ns")))
+
+p8<-p7 + 
+  stat_pvalue_manual(lab, label = "p.signif",
+                     label.size = 5,
+                     bracket.size = 0.4,
+                     tip.length = 0.02)
+p8
