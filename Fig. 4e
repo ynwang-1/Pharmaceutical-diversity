@@ -1,0 +1,69 @@
+bacteria <- read.csv("Genus.csv",header = TRUE,row.names = 1)
+gene <- read.csv("Genes.csv",header = TRUE,row.names = 1)
+group <- read.csv("Group.csv",header = TRUE)
+
+bacteria <- bacteria[rowSums(bacteria != 0) > 0, ]
+gene <- gene[rowSums(gene != 0) > 0, ]
+
+bacteria <- t(bacteria)
+gene <- t(gene)
+
+bacteria <- as.data.frame(bacteria)
+gene <- as.data.frame(gene)
+
+tax.dist <- vegdist(bacteria, method = 'bray')
+mds.t <- monoMDS(tax.dist)
+gene.dist<-vegdist(gene,method='bray')
+mds.a <- monoMDS(gene.dist)
+
+pro.t.a <- procrustes(mds.t,mds.a, symmetric = TRUE)
+summary(pro.t.a)
+plot(pro.t.a, kind = 2)
+residuals(pro.t.a)
+
+set.seed(1)
+pro.t.a_t <- protest(mds.t,mds.a, permutations = 999)
+pro.t.a_t
+pro.t.a_t$ss    
+pro.t.a_t$signif
+
+Pro_Y <- cbind(data.frame(pro.t.a$Yrot), data.frame(pro.t.a$X))
+Pro_X <- data.frame(pro.t.a$rotation)
+Pro_Y[,5]<-rownames(Pro_Y)
+colnames(Pro_Y)[5]<-"sample"
+Pro_Y<-dplyr::left_join(Pro_Y, group, by = "sample")
+rownames(Pro_Y)<-Pro_Y$sample
+Pro_Y<-Pro_Y[,-5]
+Pro_Y$diversity=factor(Pro_Y$diversity,levels = c("0","1","3","6"))
+
+p <- ggplot(data=Pro_Y) +
+  geom_segment(aes(x = X1, y = X2,
+                   xend = MDS1, yend = MDS2, color = diversity),
+               arrow = arrow(length = unit(0, 'cm')),
+               size = 1) +
+  geom_point(aes(X1, X2, color = diversity), size = 5, shape = 16) +
+  geom_point(aes(MDS1, MDS2, color = diversity), size = 5, shape = 17) +
+  scale_color_manual(values = c("0" = "#e41a1c", 
+                                "1" = "#377eb8", 
+                                "3" = "#4daf4a", 
+                                "6" = "#ff7f00")) +
+  theme(panel.background = element_rect(color = 'black',
+                                        fill = 'transparent'),
+        legend.key = element_rect(fill = 'transparent'),
+        axis.ticks.length = unit(0.4, "lines"),
+        axis.ticks = element_line(color = 'black'),
+        axis.line = element_line(colour = "black"),
+        axis.title.x = element_text(colour = 'black', size = 14),
+        axis.title.y = element_text(colour = 'black', size = 14),
+        axis.text = element_text(colour = 'black', size = 12)) +
+  labs(x = 'Dimension 1', y = 'Dimension 2', color = '') +
+  labs(title = "Correlation between bacterial genera and KEGG genes") +
+  geom_vline(xintercept = 0, color = 'gray', linetype = 2, size = 0.3) +
+  geom_hline(yintercept = 0, color = 'gray', linetype = 2, size = 0.3) +
+  geom_abline(intercept = 0, slope = Pro_X[1,2] / Pro_X[1,1], size = 0.3) +
+  geom_abline(intercept = 0, slope = Pro_X[2,2] / Pro_X[2,1], size = 0.3) +
+  annotate('text', label = 'Procrustes analysis: M2 =  0.3705469, p-value = 0.001',
+           x = -0.2, y = 0.07, size = 6, hjust = 0) +
+  theme(plot.title = element_text(size = 14, colour = "black", 
+                                  hjust = 0.5, face = "bold"))
+p
