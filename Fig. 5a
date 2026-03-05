@@ -1,0 +1,67 @@
+df2 <- read.csv("Bacteria.csv",row.names = 1,header = TRUE,
+                check.names = FALSE)
+df2$diversity <- factor(df2$diversity,levels = unique(df2$diversity))
+df2$temperature <- factor(df2$temperature,levels = unique(df2$temperature))
+
+gut <- df2 [57:111,]
+p5 <- ggplot(gut, aes(diversity, `F/B`)) +
+  geom_boxplot(aes(color = diversity), size = 0.8) +
+  geom_jitter(aes(color = diversity), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#e41a1c", "#377eb8", "#4daf4a","#ff7f00")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black"),
+        strip.text = element_text(size = 14)) +
+  facet_grid(. ~ temperature) +
+  ylab("Firmicutes / Bacteroidetes") +
+  xlab("Diversity")
+p5
+
+comparisons <- list(c("0", "1"),c("0", "3"),c("0", "6"))
+diff_t <- t_test(group_by(gut, temperature),formula = `F/B` ~ diversity,
+                 comparisons = comparisons)
+lab <- add_xy_position(diff_t, x = 'diversity', dodge = 0.65)
+lab$p.signif <- ifelse(lab$p < 0.001, "***",
+                       ifelse(lab$p < 0.01, "**",
+                              ifelse(lab$p < 0.05, "*", "ns")))#
+
+p6<-p5 + 
+  stat_pvalue_manual(lab, label = "p.signif",
+                     label.size = 5,
+                     bracket.size = 0.4,
+                     tip.length = 0.02)
+p6
+
+soil <- df2 [1:56,]
+p7 <- ggplot(soil, aes(diversity, `F/B`)) +
+  geom_boxplot(aes(color = diversity), size = 0.8) +
+  geom_jitter(aes(color = diversity), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#e41a1c", "#377eb8", "#4daf4a","#ff7f00")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black"),
+        strip.text = element_text(size = 14)) +  
+  facet_grid(. ~ temperature) +
+  ylab("Firmicutes / Bacteroidetes") +
+  xlab("Diversity")
+p7
+
+comparisons <- list(c("0", "1"),c("0", "3"),c("0", "6"))
+diff_t <- t_test(group_by(soil, temperature),formula = `F/B` ~ diversity,
+                 comparisons = comparisons)
+lab <- add_xy_position(diff_t, x = 'diversity', dodge = 0.65)
+lab$p.signif <- ifelse(lab$p < 0.001, "***",
+                       ifelse(lab$p < 0.01, "**",
+                              ifelse(lab$p < 0.05, "*", "ns")))
+p8<-p7 + 
+  stat_pvalue_manual(lab, label = "p.signif",
+                     label.size = 5,
+                     bracket.size = 0.4,
+                     tip.length = 0.02)
+p8
