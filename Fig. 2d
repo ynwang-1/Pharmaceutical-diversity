@@ -1,0 +1,26 @@
+data1 <- read.csv("number of contigs.csv", header = T)
+
+p1 <- ggplot(data1, aes(module, intensity, fill = lifestyle))
+  geom_col(width = 0.8) +                                      
+  scale_fill_manual(values = c("#c1c68c", "#ebb4b8")) + 
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.6),
+    panel.grid.major = element_line(color = "grey90", linetype = "dashed"),
+    axis.text.x = element_blank(),  
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(color = "black", size = 12),
+    axis.title = element_text(color = "black", size = 16),
+    legend.position = "right",
+    legend.title = element_text(color = "black", size = 14),
+    legend.text = element_text(color = "black", size = 14)
+  ) +  
+  geom_hline(yintercept = 0, color = "black", linetype = 1, linewidth = 0.5) +
+  labs(x = NULL, y = NULL) +  
+  scale_y_continuous(
+    breaks = seq(-150, 300,50),
+    labels = as.character(abs(seq(-150, 300, 50))),
+    limits = c(-150, 300)
+  ) +
+  ylab("Occurred number of contig")
+p1
