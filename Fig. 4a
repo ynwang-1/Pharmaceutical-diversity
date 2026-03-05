@@ -1,0 +1,61 @@
+df<- read.csv("gut_lifestyle.csv",row.names = 1, header = T)
+df$diversity <- factor(df$diversity,levels = unique(df$diversity))
+df <- df[df$temperature == 20, ]
+
+p1 <- ggplot(df, aes(diversity, lytic)) +
+  geom_boxplot(aes(color = diversity),size = 0.8)+
+  geom_jitter(aes(color = diversity), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#e41a1c", "#377eb8", "#4daf4a","#ff7f00")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black")) + 
+  ylab("Lytic phage") +
+  xlab("Diversity")
+p1
+p2 <- p1 + 
+  geom_smooth(method = "glm",
+              size = 1.2, se = TRUE,
+              color = "black",
+              linetype = "dashed",
+              aes(group = 1)) +
+  stat_cor(label.y = 0.56, label.x = 0.6, size = 5,
+           aes(label = paste(after_stat(r.label), after_stat(p.label), sep = "~`,`~"), group = 1),
+           color = "black", method = "spearman",
+           label.x.npc = "left") +
+  stat_regline_equation(label.y = 0.58, label.x = 0.6, size = 5,
+                        aes(group = 1), color = "black")
+p2
+
+df<- read.csv("gut_lifestyle.csv",row.names = 1, header = T)
+df$diversity <- factor(df$diversity,levels = unique(df$diversity))
+df <- df[df$temperature == 23, ]
+
+p1 <- ggplot(df, aes(diversity, lytic)) +
+  geom_boxplot(aes(color = diversity),size = 0.8)+
+  geom_jitter(aes(color = diversity), width = 0.3, size = 3) +
+  scale_color_manual(values = c("#e41a1c", "#377eb8", "#4daf4a","#ff7f00")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title = element_text(size = 14, color = "black")) + 
+  ylab("Lytic phage") +
+  xlab("Diversity")
+p1
+p2 <- p1 + 
+  geom_smooth(method = "glm",
+              size = 1.2, se = TRUE,
+              color = "black",
+              linetype = "dashed",
+              aes(group = 1)) +
+  stat_cor(label.y = 0.56, label.x = 0.6, size = 5,
+           aes(label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~"), group = 1),
+           color = "black", method = "spearman",
+           label.x.npc = "left") +
+  stat_regline_equation(label.y = 0.58, label.x = 0.6, size = 5,
+                        aes(group = 1), color = "black")
+p2
